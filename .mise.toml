@@ -1,0 +1,11 @@
+[env]
+_.python.venv = { path = ".venv", create = true } # create the venv if it doesn't exist
+
+[settings]
+experimental = true # Cargo backend
+python.uv_venv_auto = true
+pipx_uvx = true
+
+[tools]
+# python = ["3.11"]
+uv = ["0.5.26"] # faster than pipx, and can be installed with mise directly
