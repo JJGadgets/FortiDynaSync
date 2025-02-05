@@ -1,4 +1,0 @@
-[submodule "docker"]
-	path = docker
-	url = https://github.com/JJGadgets/containers
-	branch = main

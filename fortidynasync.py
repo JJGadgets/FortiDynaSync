@@ -11,6 +11,7 @@ from os import environ
 import requests
 from typing import TextIO
 from operator import itemgetter
+import resource
 
 # type enforcement functions
 
@@ -113,3 +114,5 @@ if req1.status_code != 200:
         raise Exception("Failed to upload DNS records of DHCP clients to FortiGate!")
 else:
     print(f"Finished syncing DNS records of DHCP clients to FortiGate {fgtHost} DNS server at DNS zone {fgtZone}, bye bye!")
+    print("Peak CPU user usage time: " + str(resource.getrusage(resource.RUSAGE_SELF).ru_utime))
+    print("Peak RAM usage in bytes: " + str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
