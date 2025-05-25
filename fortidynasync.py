@@ -83,6 +83,8 @@ def checkDNStype(ipType: str) -> str:
 dnsRecords: dict[str, list[dict[str, str | int]]] = {"dns-entry": []}
 for i in range(len(dhcpClients)):
     v: dict[str, str] = dhcpClients[i]
+    if " " in v['hostname']: v['hostname'] = v['hostname'].replace(" ", "-")
+    if "'" in v['hostname']: v['hostname'] = v['hostname'].replace("'", "")
     dnsRecords["dns-entry"].insert(i, {
         "id": i + 1,
         "status": "enable",
