@@ -42,12 +42,13 @@ def readFileOrEnv(env: str, defaultPath: bool = True) -> str:
 
 fgtHost: str = readFileOrEnv("FGT_HOST") or "192.168.1.99"
 fgtPort: str = readFileOrEnv("FGT_PORT") or "443"
-fgtVerifyTLS: bool = getEnv("FGT_VERIFY_TLS") == "True" or False
+fgtVerifyTLS: bool = getEnv("FGT_VERIFY_TLS").lower() == "true" or False
 fgtZone: str = readFileOrEnv("FGT_ZONE") or "dhcp.internal"
 fgtVdom: str = readFileOrEnv("FGT_VDOM") or "root"
-fgtIPv6: bool = getEnv("FGT_IPV6") == "True" or True
+fgtIPv6: bool = getEnv("FGT_IPV6").lower() == "true" or True
 fgtIPv6Str: str = str(fgtIPv6).lower()
-fgtLogRecords: bool = getEnv("FGT_LOG_RECORDS") == "True" or False
+fgtVci: bool = getEnv("FGT_VCI").lower() == "true" or False
+fgtLogRecords: bool = getEnv("FGT_LOG_RECORDS").lower() == "true" or False
 
 try:
     fgtApiKey: str = readFileOrEnv("FGT_API_KEY")
@@ -62,11 +63,15 @@ except Exception:
 
 # Stage 1: get DHCP clients from FortiGate
 
-dhcpKeys = {"ip", "hostname", "interface", "type"}
+if fgtVci:
+    dhcpKeys = {"ip", "hostname", "vci", "interface", "type"}
+else:
+    dhcpKeys = {"ip", "hostname", "interface", "type"}
 dhcpClientsUrl = f"https://{fgtHost}:{fgtPort}/api/v2/monitor/system/dhcp?ipv6={fgtIPv6Str}&vdom={fgtVdom}"
 dhcpClientsHeaders = {"Authorization": f"Bearer {fgtApiKey}", "Accept": "application/json"}
 try:
     dhcpClients = sorted([{k:v for k,v in i.items() if k in dhcpKeys} for i in requests.get(url = dhcpClientsUrl, headers = dhcpClientsHeaders, verify = fgtVerifyTLS).json()['results'] if "hostname" in i.keys()], key = itemgetter("interface", "hostname", "type", "ip")) # pyright: ignore[reportAny]
+    if fgtVci: dhcpClients = dhcpClients + sorted([{k:v for k,v in i.items() if k in dhcpKeys} for i in requests.get(url = dhcpClientsUrl, headers = dhcpClientsHeaders, verify = fgtVerifyTLS).json()['results'] if "vci" in i.keys() and "hostname" not in i.keys()], key = itemgetter("interface", "vci", "type", "ip")) # pyright: ignore[reportAny]
 except Exception:
     raise Exception(requests.get(url = dhcpClientsUrl, headers = dhcpClientsHeaders, verify = fgtVerifyTLS).text)
 
@@ -83,6 +88,7 @@ def checkDNStype(ipType: str) -> str:
 dnsRecords: dict[str, list[dict[str, str | int]]] = {"dns-entry": []}
 for i in range(len(dhcpClients)):
     v: dict[str, str] = dhcpClients[i]
+    if fgtVci and 'hostname' not in v and 'vci' in v: v['hostname'] = v['vci']
     if " " in v['hostname']: v['hostname'] = v['hostname'].replace(" ", "-")
     if "'" in v['hostname']: v['hostname'] = v['hostname'].replace("'", "")
     dnsRecords["dns-entry"].insert(i, {
@@ -99,7 +105,8 @@ del dhcpClients
 if fgtLogRecords:
     print("")
     print(f"Syncing the following DNS database to FortiGate {fgtHost} DNS server zone '{fgtZone}':")
-    print(dnsRecords)
+    from json import dumps
+    print(dumps(dnsRecords, indent=2))
     print("")
 
 # Stage 3: upload
