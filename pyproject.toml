@@ -1,6 +1,6 @@
 [project]
 name = "FortiDynaSync"
-version = "0.0.2"
+version = "0.0.3"
 description = "Sync FortiGate DHCP clients that provide hostname to FortiGate's built-in authoritative DNS Server. NOT AFFILIATED WITH OR AN OFFICIAL PRODUCT/SERVICE BY FORTINET."
 readme = "README.md"
 requires-python = ">=3.11"
